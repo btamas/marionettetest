@@ -1,0 +1,23 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check_style": "node_modules/.bin/jshint mazmin/* && node_modules/.bin/jscs -c .jscsrc mazmin/*",
+    "browserify_source": "node_modules/.bin/browserify -t debowerify -o public/bundle.js index.js",
+	"browserify_vendor": "node_modules/.bin/browserify -t debowerify -r ./libraries/underscore -r ./libraries/backbone -o public/vendor.js",
+    "all": "npm run-script check_style && npm run-script browserify_source"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^5.11.0",
+    "debowerify": "^0.8.1",
+    "bower": "^1.3.9",
+    "jshint": "^2.5.5",
+    "jscs": "^1.5.9",
+    "jsdoc": "^3.3.0-alpha9"
+  }
+}
