@@ -16896,19 +16896,34 @@ var Backbone = require("./../libraries/backbone/backbone.js"),
 
 	LayoutView = require('./layoutView'),
 	Listpage = require('./modules/listpage/listpage'),
+	ChatPerformer = require('./modules/performerchat/performerChat'),
 
 	Mazmin = Backbone.Marionette.Application.extend({
+		behavior: require('./behaviors'),
 		channelName: 'mazmin',
 		start : function() {
 			Backbone.Marionette.Application.prototype.start.call(this);
 			this.layoutView = new LayoutView();
-			this.module('Listpage', { moduleClass: Listpage });
+			this.module('Listpage', Listpage);
+			this.module('ChatPerformer', ChatPerformer);
 		}
 	});
 
 module.exports = Mazmin;
 
-},{"./../libraries/backbone/backbone.js":4,"./layoutView":9,"./modules/listpage/listpage":11}],9:[function(require,module,exports){
+},{"./../libraries/backbone/backbone.js":4,"./behaviors":9,"./layoutView":10,"./modules/listpage/listpage":13,"./modules/performerchat/performerChat":18}],9:[function(require,module,exports){
+var Backbone = require("./../libraries/backbone/backbone.js"),
+	InfiniteScroll = require('./modules/infinitescroll/infiniteScroll');
+
+module.exports = (function() {
+	Backbone.Marionette.Behaviors.behaviorsLookup = function() {
+		return {
+			InfiniteScroll : InfiniteScroll
+		};
+	};
+})();
+
+},{"./../libraries/backbone/backbone.js":4,"./modules/infinitescroll/infiniteScroll":11}],10:[function(require,module,exports){
 var Backbone = require("./../libraries/backbone/backbone.js"),
 	HeaderRegion = require('./regions/headerRegion'),
 
@@ -16922,23 +16937,44 @@ var Backbone = require("./../libraries/backbone/backbone.js"),
 
 module.exports = AppLayoutView;
 
-},{"./../libraries/backbone/backbone.js":4,"./regions/headerRegion":15}],10:[function(require,module,exports){
+},{"./../libraries/backbone/backbone.js":4,"./regions/headerRegion":20}],11:[function(require,module,exports){
+var Backbone = require("./../../../libraries/backbone/backbone.js"),
+
+	InfiniteScroll = Backbone.Marionette.Behavior.extend({
+		defaults: {
+			triggerDistance : 500
+		},
+		events: {
+			scroll : 'checkScroll'
+		},
+		checkScroll: function() {
+			if (this.$el.scrollTop() + 500 > this.$el.get(0).scrollHeight) {
+				this.view.showMore();
+			}
+		}
+	});
+
+module.exports = InfiniteScroll;
+
+},{"./../../../libraries/backbone/backbone.js":4}],12:[function(require,module,exports){
 var Backbone = require("./../../../../libraries/backbone/backbone.js"),
 	ListpageView = require('../view/listpageView'),
+	ListpageModel = require('../model/listpageModel'),
 
 	ListpageController = Backbone.Marionette.Controller.extend({
 		initialize: function() {
 			console.log('initialize controller');
 		},
 		showListpage: function() {
-			console.log('showListPage');
-			this.listpageView = new ListpageView();
+			this.listpageView = new ListpageView({
+				model : new ListpageModel()
+			});
 		}
 	});
 
 module.exports = ListpageController;
 
-},{"../view/listpageView":14,"./../../../../libraries/backbone/backbone.js":4}],11:[function(require,module,exports){
+},{"../model/listpageModel":14,"../view/listpageView":16,"./../../../../libraries/backbone/backbone.js":4}],13:[function(require,module,exports){
 var Backbone = require("./../../../libraries/backbone/backbone.js"),
 	ListpageRouter = require('./router/listpageRouter'),
 
@@ -16950,61 +16986,102 @@ var Backbone = require("./../../../libraries/backbone/backbone.js"),
 
 module.exports = ListpageModule;
 
-},{"./../../../libraries/backbone/backbone.js":4,"./router/listpageRouter":12}],12:[function(require,module,exports){
+},{"./../../../libraries/backbone/backbone.js":4,"./router/listpageRouter":15}],14:[function(require,module,exports){
+var Backbone = require("./../../../../libraries/backbone/backbone.js"),
+	_ = require("./../../../../libraries/underscore/underscore.js"),
+
+	ListModel = Backbone.Model.extend({
+		url : 'list.html',
+		fetch: function(options) {
+			return Backbone.Model.prototype.fetch.call(this, _.extend({ dataType: 'html'}, options));
+		},
+		parse: function(response) {
+			return {
+				content : response
+			};
+		}
+	});
+
+module.exports = ListModel;
+
+},{"./../../../../libraries/backbone/backbone.js":4,"./../../../../libraries/underscore/underscore.js":7}],15:[function(require,module,exports){
 var Backbone = require("./../../../../libraries/backbone/backbone.js"),
 	ListPageController = require('../controller/listpageController.js'),
-	listPageController = new ListPageController(),
 
 	ListPageRouter = Backbone.Marionette.AppRouter.extend({
-		controller : listPageController,
+		controller : new ListPageController(),
 		appRoutes  : {
 			'list' : 'showListpage'
 		}
 	});
 
-window.listPageController = listPageController;
-
 module.exports = ListPageRouter;
 
-},{"../controller/listpageController.js":10,"./../../../../libraries/backbone/backbone.js":4}],13:[function(require,module,exports){
+},{"../controller/listpageController.js":12,"./../../../../libraries/backbone/backbone.js":4}],16:[function(require,module,exports){
 var Backbone = require("./../../../../libraries/backbone/backbone.js"),
+	_ = require("./../../../../libraries/underscore/underscore.js"),
 
-	ListView = Backbone.Marionette.ItemView.extend({
-		initialize: function() {
-			console.log('itemview initialize');
-		},
-		el: '.list',
-		ui: {
-			performerImages : 'img'
-		},
+	ListpageView = Backbone.Marionette.View.extend({
+		el: '#listpage',
 		events: {
-			'click @ui.performerImages' : 'onPerformerImageClick'
+			click : 'loadPerformer'
 		},
-		onPerformerImageClick: function() {
-			console.log('performerImageClick');
-		}
-	});
-
-module.exports = ListView;
-
-},{"./../../../../libraries/backbone/backbone.js":4}],14:[function(require,module,exports){
-var Backbone = require("./../../../../libraries/backbone/backbone.js"),
-	ListView = require('./listView'),
-//	ListModel = require('../model/listModel'),
-
-	ListpageView = Backbone.Marionette.CollectionView.extend({
-		el        : '#listpage',
-		childView : ListView,
-		events: {
+		behaviors: {
+			InfiniteScroll : {}
 		},
-		initialize: function() {
-			console.log('init listpage');
+		loadPerformer: function() {
+			Backbone.history.navigate('/performer', {trigger: true});
+		},
+		showMore: function() {
+			this.model.fetch().done(_.bind(function() {
+				this.$el.append(this.model.attributes.content);
+			}, this));
 		}
 	});
 
 module.exports = ListpageView;
 
-},{"./../../../../libraries/backbone/backbone.js":4,"./listView":13}],15:[function(require,module,exports){
+},{"./../../../../libraries/backbone/backbone.js":4,"./../../../../libraries/underscore/underscore.js":7}],17:[function(require,module,exports){
+var Backbone = require("./../../../../libraries/backbone/backbone.js"),
+
+	ChatperformerController = Backbone.Marionette.Controller.extend({
+		initialize: function() {
+			console.log('initialize performer controller');
+		},
+		showPerformer: function() {
+			console.log('performer show');
+		}
+	});
+
+module.exports = ChatperformerController;
+
+},{"./../../../../libraries/backbone/backbone.js":4}],18:[function(require,module,exports){
+var Backbone = require("./../../../libraries/backbone/backbone.js"),
+	PerformerChatRouter = require('./router/performerchatRouter'),
+
+	PerformerChatModule = Backbone.Marionette.Module.extend({
+		initialize: function() {
+			console.log('performerChata', this);
+			this.router = new PerformerChatRouter();
+		}
+	});
+
+module.exports = PerformerChatModule;
+
+},{"./../../../libraries/backbone/backbone.js":4,"./router/performerchatRouter":19}],19:[function(require,module,exports){
+var Backbone = require("./../../../../libraries/backbone/backbone.js"),
+	ChatPerformerController = require('../controller/chatperformerController'),
+
+	ChatPerformerRouter = Backbone.Marionette.AppRouter.extend({
+		controller : new ChatPerformerController(),
+		appRoutes  : {
+			performer : 'showPerformer'
+		}
+	});
+
+module.exports = ChatPerformerRouter;
+
+},{"../controller/chatperformerController":17,"./../../../../libraries/backbone/backbone.js":4}],20:[function(require,module,exports){
 var Backbone = require("./../../libraries/backbone/backbone.js"),
 
 	HeaderRegion = Backbone.Marionette.Region.extend({

@@ -1,14 +1,21 @@
 var Backbone = require('backbone'),
-	ListView = require('./listView'),
-//	ListModel = require('../model/listModel'),
+	_ = require('underscore'),
 
-	ListpageView = Backbone.Marionette.CollectionView.extend({
-		el        : '#listpage',
-		childView : ListView,
+	ListpageView = Backbone.Marionette.View.extend({
+		el: '#listpage',
 		events: {
+			click : 'loadPerformer'
 		},
-		initialize: function() {
-			console.log('init listpage');
+		behaviors: {
+			InfiniteScroll : {}
+		},
+		loadPerformer: function() {
+			Backbone.history.navigate('/performer', {trigger: true});
+		},
+		showMore: function() {
+			this.model.fetch().done(_.bind(function() {
+				this.$el.append(this.model.attributes.content);
+			}, this));
 		}
 	});
 
